@@ -8,7 +8,14 @@ from models.unet import get_unet
 from utils import enable_dropout
 from metrics.uncertainty import predictive_entropy, expected_entropy, mutual_information
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+def _get_device():
+    if torch.backends.mps.is_available():
+        return torch.device("mps")
+    if torch.cuda.is_available():
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+device = _get_device()
 
 model = get_unet().to(device)
 

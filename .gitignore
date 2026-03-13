@@ -1,4 +1,27 @@
-docs/*
-data/ISIC2018/masks/*
+# Data (large image files)
 data/ISIC2018/images/*
+data/ISIC2018/masks/*
+data/ISIC2018/corrupted/*
 data/splits/*
+
+# Generated reports
+reports/*.png
+reports/*.csv
+
+# Model checkpoints
+*.pth
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS files
+.DS_Store
+
+# Virtual environment
+venv/
+
+# IDE
+.vscode/
+.idea/
