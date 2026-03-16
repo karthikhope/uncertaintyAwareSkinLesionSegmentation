@@ -48,8 +48,7 @@ def pixel_ece(all_probs, all_labels, n_bins=15):
 
         if bin_counts[i] > 0:
             bin_confidences[i] = all_probs[in_bin].mean()
-            predicted_labels = (all_probs[in_bin] >= 0.5).astype(np.float32)
-            bin_accuracies[i] = (predicted_labels == all_labels[in_bin]).mean()
+            bin_accuracies[i] = all_labels[in_bin].mean()
 
     total_pixels = all_probs.shape[0]
     weights = bin_counts / max(total_pixels, 1)
@@ -108,10 +107,10 @@ def plot_reliability_diagram(
     ax_top.bar(
         bin_centers, bin_accuracies, width=bar_width * 0.9,
         color="steelblue", edgecolor="black", linewidth=0.5,
-        label="Accuracy", alpha=0.85,
+        label="Fraction of Positives", alpha=0.85,
     )
     ax_top.plot([0, 1], [0, 1], "k--", linewidth=1, label="Perfect calibration")
-    ax_top.set_ylabel("Accuracy")
+    ax_top.set_ylabel("Fraction of Positives")
     ax_top.set_title(f"{title}  (ECE = {ece_value:.4f})")
     ax_top.legend(loc="upper left", fontsize=8)
     ax_top.set_xlim(0, 1)
