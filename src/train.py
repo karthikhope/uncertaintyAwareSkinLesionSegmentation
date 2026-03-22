@@ -24,8 +24,14 @@ from torch.utils.data import DataLoader, TensorDataset
 from pathlib import Path
 from tqdm import tqdm
 
-from models.unet import get_unet
+from models.unet import get_unet, get_attention_unet, get_resunet
 from metrics.seg import dice_score, iou_score
+
+MODEL_REGISTRY = {
+    "unet": get_unet,
+    "attention_unet": get_attention_unet,
+    "resunet": get_resunet,
+}
 
 
 def get_device():
@@ -119,6 +125,9 @@ def make_synthetic_data():
 
 def main():
     parser = argparse.ArgumentParser(description="Train Bayesian U-Net")
+    parser.add_argument("--model", type=str, default="unet",
+                        choices=list(MODEL_REGISTRY.keys()),
+                        help="Model variant: unet, attention_unet, resunet")
     parser.add_argument("--use_isic", action="store_true",
                         help="Train on real ISIC 2018 data instead of synthetic")
     parser.add_argument("--epochs", type=int, default=50)
@@ -132,7 +141,9 @@ def main():
     device = get_device()
     print(f"Using device: {device}")
 
-    model = get_unet().to(device)
+    model_fn = MODEL_REGISTRY[args.model]
+    model = model_fn().to(device)
+    print(f"Model: {args.model} ({sum(p.numel() for p in model.parameters()):,} params)")
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     bce_fn = nn.BCEWithLogitsLoss()
 
@@ -165,8 +176,8 @@ def main():
     )
 
     best_dice = 0.0
-    checkpoint_path = Path("best_model.pth")
-    history_path = Path("training_history.csv")
+    checkpoint_path = Path(f"best_model_{args.model}.pth")
+    history_path = Path(f"training_history_{args.model}.csv")
     total_epochs = args.epochs
     history = []
 

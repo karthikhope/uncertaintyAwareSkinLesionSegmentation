@@ -19,11 +19,17 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-from models.unet import get_unet
+from models.unet import get_unet, get_attention_unet, get_resunet
 from metrics.seg import dice_score
 from metrics.calibration import pixel_ece
 from utils import enable_dropout
 
+
+MODEL_REGISTRY = {
+    "unet": get_unet,
+    "attention_unet": get_attention_unet,
+    "resunet": get_resunet,
+}
 
 CORRUPTION_TYPES = [
     "gaussian_blur", "motion_blur", "gaussian_noise", "speckle_noise",
@@ -121,7 +127,10 @@ def format_time(seconds):
 
 def main():
     parser = argparse.ArgumentParser(description="Statistical significance tests")
-    parser.add_argument("--checkpoint", type=str, default="src/best_model.pth")
+    parser.add_argument("--model", type=str, default="unet",
+                        choices=list(MODEL_REGISTRY.keys()),
+                        help="Model architecture: unet, attention_unet, resunet")
+    parser.add_argument("--checkpoint", type=str, default="src/best_model_unet.pth")
     parser.add_argument("--data_root", type=str, default="data/ISIC2018")
     parser.add_argument("--splits_root", type=str, default="data/splits")
     parser.add_argument("--mc_passes", type=int, default=20)
@@ -133,7 +142,8 @@ def main():
     device = get_device()
     print(f"Device: {device}")
 
-    model = get_unet().to(device)
+    model_fn = MODEL_REGISTRY[args.model]
+    model = model_fn().to(device)
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state_dict"])
     print(f"Loaded checkpoint: epoch {ckpt['epoch']}")

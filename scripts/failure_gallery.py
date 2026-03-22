@@ -25,7 +25,13 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-from models.unet import get_unet
+from models.unet import get_unet, get_attention_unet, get_resunet
+
+MODEL_REGISTRY = {
+    "unet": get_unet,
+    "attention_unet": get_attention_unet,
+    "resunet": get_resunet,
+}
 from datasets.isic import ISICDataset, IMAGENET_MEAN, IMAGENET_STD
 from metrics.seg import dice_score
 from metrics.uncertainty import predictive_entropy, mutual_information
@@ -131,7 +137,10 @@ def plot_gallery(items, title, save_path):
 
 def main():
     parser = argparse.ArgumentParser(description="Failure case gallery")
-    parser.add_argument("--checkpoint", type=str, default="src/best_model.pth")
+    parser.add_argument("--model", type=str, default="unet",
+                        choices=list(MODEL_REGISTRY.keys()),
+                        help="Model architecture: unet, attention_unet, resunet")
+    parser.add_argument("--checkpoint", type=str, default="src/best_model_unet.pth")
     parser.add_argument("--data_root", type=str, default="data/ISIC2018")
     parser.add_argument("--splits_root", type=str, default="data/splits")
     parser.add_argument("--mc_passes", type=int, default=20)
@@ -146,7 +155,8 @@ def main():
     device = get_device()
     print(f"Device: {device}")
 
-    model = get_unet().to(device)
+    model_fn = MODEL_REGISTRY[args.model]
+    model = model_fn().to(device)
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
     model.load_state_dict(ckpt["model_state_dict"])
     print(f"Loaded checkpoint: epoch {ckpt['epoch']}, Dice {ckpt['val_dice']:.4f}")
